@@ -485,8 +485,24 @@ func (p *parser) readOption(pf *ProtoFile, documentation string, ctx parseCtx) e
 	}
 	p.skipWhitespace()
 
-	if p.read() == '"' {
+	c := p.read()
+	if c == '"' {
 		oe.Value = p.readUntil('"')
+	} else if c == '{' {
+		parentesis := 1
+		for {
+			p.skipWhitespace()
+			c = p.read()
+			if c == '}' {
+				parentesis--
+			}
+			if c == '{' {
+				parentesis++
+			}
+			if parentesis == 0 || p.eofReached {
+				break
+			}
+		}
 	} else {
 		p.unread()
 		oe.Value = p.readWord()
@@ -962,14 +978,12 @@ func (p *parser) readName() (string, enclosure, error) {
 		if p.read() != ')' {
 			return "", enc, p.errline("Expected ')'")
 		}
-		p.unread()
 	} else if c == '[' {
 		enc = bracket
 		name = p.readWord()
 		if p.read() != ']' {
 			return "", enc, p.errline("Expected ']'")
 		}
-		p.unread()
 	} else {
 		p.unread()
 		name = p.readWord()
